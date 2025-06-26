@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>운행중 - 기사용 앱</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Kakao Map API will be loaded dynamically -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .app-container {
+            width: 411px;
+            height: 731px;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            padding-bottom: 70px;
+        }
+        
+        /* 작은 Android 화면 (360x640) 대응 */
+        @media (max-width: 411px) {
+            .app-container {
+                width: 360px;
+                height: 640px;
+                margin: 10px auto;
+                border-radius: 15px;
+                padding-bottom: 60px;
+            }
+            
+            .header {
+                padding: 12px;
+            }
+            
+            .status-card {
+                margin: 10px;
+                padding: 8px 12px;
+            }
+            
+            .route-summary-card {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .route-header {
+                margin-bottom: 15px;
+            }
+            
+            .btn-map-view {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .route-info {
+                margin: 10px;
+                padding: 12px;
+            }
+            
+            .timer {
+                margin: 15px 0;
+                font-size: 20px;
+            }
+            
+            .driving-info {
+                margin-top: 10px;
+            }
+            
+            .bottom-nav {
+                height: 60px;
+                border-radius: 0 0 15px 15px;
+            }
+        }
+        .header {
+            background-color: #1976d2;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .status-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .status-on-duty {
+            background-color: #ffcdd2;
+            color: #d32f2f;
+        }
+        .route-summary-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .route-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .btn-map-view {
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+        .btn-map-view:hover {
+            background-color: #1565c0;
+        }
+        .map-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .map-modal-content {
+            background-color: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            height: 70%;
+            max-height: 600px;
+            overflow: hidden;
+            position: relative;
+        }
+        .map-modal-header {
+            background-color: #1976d2;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .map-modal-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        .btn-close-map {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-close-map:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .map-container-modal {
+            height: calc(100% - 65px);
+            position: relative;
+        }
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            height: 70px;
+            border-radius: 0 0 20px 20px;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #757575;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .nav-item.active {
+            color: #1976d2;
+        }
+        .nav-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        .route-info {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .route-point {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .route-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .start-point {
+            background-color: #4caf50;
+            color: white;
+        }
+        .end-point {
+            background-color: #f44336;
+            color: white;
+        }
+        .route-address {
+            flex-grow: 1;
+        }
+        .route-line {
+            width: 2px;
+            height: 30px;
+            background-color: #1976d2;
+            margin-left: 14px;
+            margin-bottom: -5px;
+        }
+        .btn-action {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .btn-pickup {
+            background-color: #1976d2;
+            color: white;
+        }
+        .btn-complete {
+            background-color: #4caf50;
+            color: white;
+        }
+        .timer {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #1976d2;
+        }
+        .driving-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .info-item {
+            text-align: center;
+            flex: 1;
+        }
+        .info-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #757575;
+        }
+        .medical-staff {
+            color: #4caf50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1 class="h5 mb-0">운행중</h1>
+        </div>
+        
+        <div class="status-card">
+            <h2 class="h6 mb-3">현재 상태</h2>
+            <div class="d-flex align-items-center mb-3">
+                <span class="status-indicator status-on-duty">운행중</span>
+                <span id="status-text">고객 픽업 중</span>
+            </div>
+        </div>
+        
+        <!-- 출발지/목적지 정보 카드 -->
+        <div class="route-summary-card">
+            <div class="route-header">
+                <h3 class="h6 mb-3">경로 정보</h3>
+                <button class="btn-map-view" onclick="showMap()">
+                    <i class="bi bi-map"></i>
+                    지도보기
+                </button>
+            </div>
+            
+            <div class="route-point">
+                <div class="route-icon start-point">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </div>
+                <div class="route-address">
+                    <div class="fw-bold">출발지</div>
+                    <div class="text-muted">서울시 강남구 테헤란로 152</div>
+                </div>
+            </div>
+            
+            <div class="route-line"></div>
+            
+            <div class="route-point">
+                <div class="route-icon end-point">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </div>
+                <div class="route-address">
+                    <div class="fw-bold">목적지</div>
+                    <div class="text-muted">서울시 강남구 삼성로 513</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 지도 모달 -->
+        <div class="map-modal" id="mapModal" style="display: none;">
+            <div class="map-modal-content">
+                <div class="map-modal-header">
+                    <h3>경로 지도</h3>
+                    <button class="btn-close-map" onclick="hideMap()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="map-container-modal">
+                    <div id="map" style="width:100%;height:100%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="timer" id="timer">00:00</div>
+        
+        <div class="driving-info">
+            <div class="info-item">
+                <div class="info-value">3.2 km</div>
+                <div class="info-label">총 거리</div>
+            </div>
+            <div class="info-item">
+                <div class="info-value">15 분</div>
+                <div class="info-label">예상 시간</div>
+            </div>
+            <div class="info-item">
+                <div class="info-value medical-staff">간호사 (여)</div>
+                <div class="info-label">의료인력</div>
+            </div>
+        </div>
+        
+        <div class="route-info">
+            <button class="btn-action btn-pickup" id="actionButton" onclick="toggleDrivingStatus()">고객 픽업 완료</button>
+        </div>
+        
+        <!-- 하단 네비게이션 -->
+        <div class="bottom-nav">
+            <a href="driver.html" class="nav-item" onclick="window.location.href='driver.html'; return false;">
+                <i class="bi bi-house-door nav-icon"></i>
+                <span>홈</span>
+            </a>
+            <a href="call_waiting.html" class="nav-item" onclick="window.location.href='call_waiting.html'; return false;">
+                <i class="bi bi-telephone nav-icon"></i>
+                <span>콜 대기</span>
+            </a>
+            <a href="driving.html" class="nav-item active" onclick="window.location.href='driving.html'; return false;">
+                <i class="bi bi-car-front nav-icon"></i>
+                <span>운행중</span>
+            </a>
+            <a href="reservations.html" class="nav-item" onclick="window.location.href='reservations.html'; return false;">
+                <i class="bi bi-calendar nav-icon"></i>
+                <span>예약내역</span>
+            </a>
+            <a href="settings.html" class="nav-item" onclick="window.location.href='settings.html'; return false;">
+                <i class="bi bi-gear nav-icon"></i>
+                <span>설정</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let drivingStatus = 'pickup'; // 'pickup' or 'driving'
+        let startTime = new Date();
+        let timerInterval;
+        let map;
+        
+        // Kakao Map API 동적 로드 함수
+        function loadKakaoMapAPI() {
+            return new Promise((resolve, reject) => {
+                if (window.kakao && window.kakao.maps) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=ae9cce23e8367af0be888d1657d525e7&autoload=false';
+                script.onload = () => {
+                    kakao.maps.load(() => {
+                        resolve();
+                    });
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // 지도 초기화 함수
+        function initMap() {
+            // 지도를 표시할 div 
+            const container = document.getElementById('map');
+            // 지도의 중심좌표
+            const options = {
+                center: new kakao.maps.LatLng(37.4989, 127.0300), // 강남 중심
+                level: 5 // 지도의 확대 레벨
+            };
+            
+            // 지도 생성
+            map = new kakao.maps.Map(container, options);
+            
+            // 출발 마커 생성
+            const startMarker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(37.5033, 127.0447), // 테헤란로 152 근처
+                map: map
+            });
+            
+            // 도착 마커 생성
+            const endMarker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(37.5096, 127.0653), // 삼성로 513 근처
+                map: map
+            });
+            
+            // 경로 표시
+            displayRoute();
+        }
+        
+        // 경로 표시 함수
+        function displayRoute() {
+            // 선을 구성하는 좌표 배열
+            const linePath = [
+                new kakao.maps.LatLng(37.5033, 127.0447), // 출발지점
+                new kakao.maps.LatLng(37.5050, 127.0500),
+                new kakao.maps.LatLng(37.5070, 127.0550),
+                new kakao.maps.LatLng(37.5085, 127.0600),
+                new kakao.maps.LatLng(37.5096, 127.0653)  // 도착지점
+            ];
+            
+            // 선 옵션
+            const lineOption = {
+                path: linePath,
+                strokeWeight: 5,
+                strokeColor: '#1976d2',
+                strokeOpacity: 0.7,
+                strokeStyle: 'solid'
+            };
+            
+            // 선 객체 생성
+            const polyline = new kakao.maps.Polyline(lineOption);
+            
+            // 지도에 선 표시
+            polyline.setMap(map);
+            
+            // 현재 위치 표시 (차량 아이콘으로 대체 가능)
+            const currentPosition = new kakao.maps.Marker({
+                position: linePath[0], // 초기 위치는 출발점
+                map: map,
+                image: new kakao.maps.MarkerImage(
+                    'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_b.png',
+                    new kakao.maps.Size(31, 35),
+                    {offset: new kakao.maps.Point(15, 35)}
+                )
+            });
+        }
+        
+        // 지도 모달 표시 함수
+        function showMap() {
+            const modal = document.getElementById('mapModal');
+            modal.style.display = 'flex';
+            
+            // 지도가 아직 초기화되지 않았다면 초기화
+            if (!map) {
+                loadKakaoMapAPI().then(() => {
+                    initMap();
+                }).catch(error => {
+                    console.error('Kakao Map API 로드 실패:', error);
+                });
+            }
+        }
+        
+        // 지도 모달 숨김 함수
+        function hideMap() {
+            const modal = document.getElementById('mapModal');
+            modal.style.display = 'none';
+        }
+        
+        // 모달 외부 클릭 시 닫기
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('mapModal');
+            if (event.target === modal) {
+                hideMap();
+            }
+        });
+        
+        // 페이지 로드 시 타이머만 시작
+        window.addEventListener('load', function() {
+            startTimer();
+        });
+        
+        function startTimer() {
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        
+        function updateTimer() {
+            const now = new Date();
+            const diff = new Date(now - startTime);
+            const mins = diff.getUTCMinutes();
+            const secs = diff.getUTCSeconds();
+            document.getElementById('timer').textContent = 
+                (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+        
+        function toggleDrivingStatus() {
+            const statusText = document.getElementById('status-text');
+            const actionButton = document.getElementById('actionButton');
+            
+            if (drivingStatus === 'pickup') {
+                drivingStatus = 'driving';
+                statusText.textContent = '목적지로 이동 중';
+                actionButton.textContent = '운행 완료';
+                actionButton.classList.remove('btn-pickup');
+                actionButton.classList.add('btn-complete');
+                // 지도 업데이트 - 차량 위치 변경 등
+                updateVehiclePosition(2); // 경로의 중간 지점으로 이동
+            } else {
+                // 운행 완료 로직
+                clearInterval(timerInterval);
+                alert('운행이 완료되었습니다. 정산 화면으로 이동합니다.');
+                window.location.href = 'driver.html';
+            }
+        }
+        
+        // 차량 위치 업데이트 함수 (실제로는 GPS 데이터를 기반으로 업데이트)
+        function updateVehiclePosition(pointIndex) {
+            // 실제 구현에서는 GPS 추적 또는 시뮬레이션된 위치 데이터를 사용
+            // 이 예제에서는 미리 정의된 경로의 포인트를 사용
+            const positions = [
+                new kakao.maps.LatLng(37.5033, 127.0447), // 출발지점
+                new kakao.maps.LatLng(37.5050, 127.0500),
+                new kakao.maps.LatLng(37.5070, 127.0550),
+                new kakao.maps.LatLng(37.5085, 127.0600),
+                new kakao.maps.LatLng(37.5096, 127.0653)  // 도착지점
+            ];
+            
+            // 지도 중심 이동
+            map.setCenter(positions[pointIndex]);
+            
+            // 실제 구현에서는 차량 마커 위치도 업데이트
+        }
+    </script>
+</body>
+</html> 
