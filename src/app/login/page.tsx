@@ -15,9 +15,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // 카카오 SDK 초기화
+    // 카카오 SDK 초기화 (중복 초기화 방지)
     if (typeof window !== 'undefined' && window.Kakao) {
-      window.Kakao.init('ae9cce23e8367af0be888d1657d525e7')
+      if (!window.Kakao.isInitialized()) {
+        window.Kakao.init('ae9cce23e8367af0be888d1657d525e7')
+      }
     }
 
     // 이미 로그인된 상태 확인
@@ -78,7 +80,7 @@ export default function LoginPage() {
     
     setLoading(true)
     
-    if (window.Kakao && window.Kakao.Auth) {
+    if (window.Kakao && window.Kakao.Auth && window.Kakao.isInitialized()) {
       window.Kakao.Auth.login({
         success: function(authObj: any) {
           console.log('카카오 로그인 성공:', authObj)
