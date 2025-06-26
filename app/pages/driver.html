@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>민간구급차 배차 플랫폼 - 기사용 앱</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <!-- Auth Manager -->
+    <!-- <script src="../assets/js/auth.js"></script> -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .app-container {
+            width: 411px;
+            height: 731px;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            padding-bottom: 70px;
+        }
+        
+        /* 작은 Android 화면 (360x640) 대응 */
+        @media (max-width: 411px) {
+            .app-container {
+                width: 360px;
+                height: 640px;
+                margin: 10px auto;
+                border-radius: 15px;
+                padding-bottom: 60px;
+            }
+            
+            .header {
+                padding: 12px;
+            }
+            
+            .status-card {
+                margin: 10px;
+                padding: 12px;
+            }
+            
+
+            
+            .driver-info-section, .qr-code-section {
+                margin: 10px;
+                padding: 12px;
+            }
+            
+            .qr-container {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .qr-info {
+                margin-left: 0;
+                margin-top: 15px;
+            }
+            
+            .bottom-nav {
+                height: 60px;
+                border-radius: 0 0 15px 15px;
+            }
+        }
+        .header {
+            background-color: #1976d2;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            flex: 1;
+        }
+        
+        .user-profile {
+            font-size: 0.9rem;
+        }
+        .status-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .status-off {
+            background-color: #e0e0e0;
+            color: #616161;
+        }
+        .status-waiting {
+            background-color: #bbdefb;
+            color: #1976d2;
+        }
+        .status-on-duty {
+            background-color: #ffcdd2;
+            color: #d32f2f;
+        }
+        .ambulance-type {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+        .driver-info {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+        .driver-info-section, .qr-code-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .driver-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 15px;
+        }
+        .driver-info-header:hover {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 5px 10px;
+            margin: 0 -10px 15px -10px;
+        }
+        #driver-info-icon {
+            transition: transform 0.3s ease;
+            color: #1976d2;
+        }
+        #driver-info-icon.rotated {
+            transform: rotate(180deg);
+        }
+        .driver-details {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+            min-width: 80px;
+        }
+        .info-value {
+            color: #212529;
+            text-align: right;
+        }
+        .qr-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        #qr-code {
+            width: 120px;
+            height: 120px;
+            background-color: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-align: center;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iMTUiIGhlaWdodD0iMTUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iMjUiIHk9IjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iMzUiIHk9IjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iNDUiIHk9IjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iNTUiIHk9IjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iNzUiIHk9IjUiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSI1IiB5PSIyNSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSIxNSIgeT0iMjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iMjUiIHk9IjI1IiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMTk3NmQyIi8+CjxyZWN0IHg9IjM1IiB5PSIyNSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSI0NSIgeT0iMjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iNzUiIHk9IjI1IiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMTk3NmQyIi8+CjxyZWN0IHg9Ijg1IiB5PSIyNSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSI1IiB5PSI0NSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSIxNSIgeT0iNDUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iMjUiIHk9IjQ1IiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMTk3NmQyIi8+CjxyZWN0IHg9IjM1IiB5PSI0NSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSI0NSIgeT0iNDUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iNzUiIHk9IjQ1IiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMTk3NmQyIi8+CjxyZWN0IHg9Ijg1IiB5PSI0NSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSI1IiB5PSI3NSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjE1IiBmaWxsPSIjMTk3NmQyIi8+CjxyZWN0IHg9IjI1IiB5PSI3NSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSIzNSIgeT0iNzUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IiMxOTc2ZDIiLz4KPHJlY3QgeD0iNDUiIHk9Ijc1IiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMTk3NmQyIi8+CjxyZWN0IHg9IjU1IiB5PSI3NSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iIzE5NzZkMiIvPgo8cmVjdCB4PSI3NSIgeT0iNzUiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgZmlsbD0iIzE5NzZkMiIvPgo8L3N2Zz4K');
+            background-size: 80px 80px;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .qr-info {
+            flex: 1;
+            margin-left: 20px;
+            text-align: center;
+        }
+        .qr-code-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 5px;
+        }
+        .qr-description {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            height: 70px;
+            border-radius: 0 0 20px 20px;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #757575;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .nav-item.active {
+            color: #1976d2;
+        }
+        .nav-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        .btn-duty {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-start {
+            background-color: #1976d2;
+            color: white;
+        }
+        .btn-end {
+            background-color: #d32f2f;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1 class="h5 mb-0">기사용 APP</h1>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-white p-0 me-3" onclick="showHelpModal()">
+                    <i class="bi bi-question-circle-fill fs-5"></i>
+                </button>
+                <div id="user-profile-container"></div>
+            </div>
+        </div>
+        
+        <!-- 대시보드 화면 -->
+        <div id="dashboard" class="screen active">
+            <div class="status-card">
+                <h2 class="h6 mb-3">차량 정보</h2>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="status-indicator status-off" id="status-badge">차량번호</span>
+                    <span id="status-text">서울 12가 3456</span>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="status-indicator ambulance-type">차량종류</span>
+                    <span>민간구급차</span>
+                </div>
+                <div class="d-flex align-items-center mb-3">
+                    <span class="status-indicator driver-info">기사정보</span>
+                    <span>홍길동 (남)</span>
+                </div>
+                <button class="btn-duty btn-start" id="duty-button" onclick="toggleDutyStatus()">출근하기</button>
+            </div>
+            
+
+            
+            <!-- 기사 정보 섹션 -->
+            <div class="driver-info-section">
+                <div class="driver-info-header" onclick="toggleDriverInfo()">
+                    <h2 class="h6 mb-0">기사 정보</h2>
+                    <i class="bi bi-chevron-down" id="driver-info-icon"></i>
+                </div>
+                <div class="driver-details" id="driver-details" style="display: none;">
+                    <div class="info-row">
+                        <span class="info-label">이름:</span>
+                        <span class="info-value">홍길동</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">성별:</span>
+                        <span class="info-value">남</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">면허번호:</span>
+                        <span class="info-value">12-34-567890-12</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">연락처:</span>
+                        <span class="info-value">010-1234-5678</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">소속:</span>
+                        <span class="info-value">서울응급의료센터</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR 코드 섹션 -->
+            <div class="qr-code-section">
+                <h2 class="h6 mb-3">지정코드 QR</h2>
+                <div class="qr-container">
+                    <div id="qr-code"></div>
+                    <div class="qr-info">
+                        <div class="qr-code-text">AMB-2024-001</div>
+                        <div class="qr-description">승객에게 보여주세요</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 하단 네비게이션 -->
+        <div class="bottom-nav">
+            <a href="main.html" class="nav-item active" onclick="window.location.href='main.html'; return false;">
+                <i class="bi bi-house-door nav-icon"></i>
+                <span>홈</span>
+            </a>
+            <a href="call_waiting.html" class="nav-item" onclick="window.location.href='call_waiting.html'; return false;">
+                <i class="bi bi-telephone nav-icon"></i>
+                <span>콜 대기</span>
+            </a>
+            <a href="driving.html" class="nav-item" onclick="window.location.href='driving.html'; return false;">
+                <i class="bi bi-car-front nav-icon"></i>
+                <span>운행중</span>
+            </a>
+            <a href="reservations.html" class="nav-item" onclick="window.location.href='reservations.html'; return false;">
+                <i class="bi bi-calendar nav-icon"></i>
+                <span>예약내역</span>
+            </a>
+            <a href="settings.html" class="nav-item" onclick="window.location.href='settings.html'; return false;">
+                <i class="bi bi-gear nav-icon"></i>
+                <span>설정</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 도움말 모달 -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">앱 사용 설명서 및 주의사항</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="fw-bold mb-3">📱 앱 사용 설명서</h6>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2">1. 출근하기 버튼을 눌러 운행을 시작하세요.</li>
+                        <li class="mb-2">2. QR코드를 승객에게 보여주세요.</li>
+                        <li class="mb-2">3. 콜 대기 화면에서 새로운 배차 요청을 확인하세요.</li>
+                        <li class="mb-2">4. 운행 중 화면에서 실시간 위치를 확인하세요.</li>
+                    </ul>
+
+                    <h6 class="fw-bold mb-3">⚠️ 주의사항</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">• 운행 전 차량 상태를 반드시 점검하세요.</li>
+                        <li class="mb-2">• 안전운전을 최우선으로 하세요.</li>
+                        <li class="mb-2">• 긴급상황 발생 시 즉시 관리자에게 연락하세요.</li>
+                        <li class="mb-2">• 승객 정보는 철저히 보호하세요.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let dutyStatus = 'off'; // 'off', 'waiting', 'on-duty'
+        
+        // 기사 정보 아코디언 토글 함수
+        function toggleDriverInfo() {
+            const details = document.getElementById('driver-details');
+            const icon = document.getElementById('driver-info-icon');
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                icon.classList.add('rotated');
+            } else {
+                details.style.display = 'none';
+                icon.classList.remove('rotated');
+            }
+        }
+        
+        function toggleDutyStatus() {
+            const statusBadge = document.getElementById('status-badge');
+            const statusText = document.getElementById('status-text');
+            const dutyButton = document.getElementById('duty-button');
+            
+            if (dutyStatus === 'off') {
+                dutyStatus = 'waiting';
+                statusBadge.textContent = '대기중';
+                statusBadge.className = 'status-indicator status-waiting';
+                statusText.textContent = '서울 12가 3456';
+                dutyButton.textContent = '퇴근하기';
+                dutyButton.className = 'btn-duty btn-end';
+            } else {
+                dutyStatus = 'off';
+                statusBadge.textContent = '차량번호';
+                statusBadge.className = 'status-indicator status-off';
+                statusText.textContent = '서울 12가 3456';
+                dutyButton.textContent = '출근하기';
+                dutyButton.className = 'btn-duty btn-start';
+            }
+        }
+        
+        // 네비게이션 항목 클릭 이벤트
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(navItem => {
+                    navItem.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // 여기에 화면 전환 로직 추가
+                const screenId = this.getAttribute('data-screen');
+                if (screenId) {
+                    document.querySelectorAll('.screen').forEach(screen => {
+                        screen.classList.remove('active');
+                    });
+                    document.getElementById(screenId).classList.add('active');
+                }
+            });
+        });
+
+        // 도움말 모달 표시 함수
+        function showHelpModal() {
+            const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+            helpModal.show();
+        }
+    </script>
+</body>
+</html> 
